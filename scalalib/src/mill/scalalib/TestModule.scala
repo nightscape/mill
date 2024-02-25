@@ -86,6 +86,32 @@ trait TestModule
       testTask(T.task { testArgs }, T.task { selector })()
     }
   }
+  def modificationTimestamps: T[Map[String, Long]] = T {
+    zincWorker().worker() lastModification (compile())
+  }
+
+  /**
+   * Discovers and runs the module's tests in a subprocess, reporting the
+   * results to the console.
+   * Arguments before "--" will be used as wildcard selector to select
+   * test classes, arguments after "--" will be passed as regular arguments.
+   * `testOnly *foo foobar bar* -- arguments` will test only classes with name
+   * (includes package name) 1. end with "foo", 2. exactly "foobar", 3. start
+   * with "bar", with "arguments" as arguments passing to test framework.
+   */
+  def testQuick(args: String*): Command[(String, Seq[TestResult])] = {
+    val splitAt = args.indexOf("--")
+    val (selector, testArgs) =
+      if (splitAt == -1) (args, Seq.empty)
+      else {
+        val (s, t) = args.splitAt(splitAt)
+        (s, t.tail)
+      }
+    T.command {
+      T.ctx().log.error(modificationTimestamps().toString)
+      testTask(T.task { testArgs }, T.task { selector })()
+    }
+  }
 
   /**
    * Controls whether the TestRunner should receive it's arguments via an args-file instead of a as long parameter list.

@@ -18,6 +18,11 @@ object TestUtil {
           .split(",")
           .map(os.Path(_))
       ),
+      ArraySeq.unsafeWrapArray(
+        sys.env("MILL_TEST_CLASSPATH_" + segments.mkString("-"))
+          .split(",")
+          .map(os.Path(_))
+      ),
       (_, _) => false,
       new Logger(Some(testLogFolder)),
       () => None

@@ -149,6 +149,8 @@ trait ZincWorkerApi {
    */
   def discoverMainClasses(compilationResult: CompilationResult): Seq[String]
 
+  def lastModification(compilationResult: CompilationResult): Map[String, Long]
+
   def docJar(
       scalaVersion: String,
       scalaOrganization: String,

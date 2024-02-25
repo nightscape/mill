@@ -331,15 +331,41 @@ class ZincWorkerImpl(
   def discoverMainClasses(compilationResult: CompilationResult): Seq[String] = {
     def toScala[A](o: Optional[A]): Option[A] = if (o.isPresent) Some(o.get) else None
 
+  private def extractAnalysis(compilationResult: CompilationResult): Option[Analysis] =
     toScala(FileAnalysisStore.binary(compilationResult.analysisFile.toIO).get())
       .map(_.getAnalysis)
-      .flatMap {
-        case analysis: Analysis =>
-          Some(analysis.infos.allInfos.values.flatMap(_.getMainClasses).toSeq.sorted)
-        case _ =>
-          None
+      .collect { case analysis: Analysis => analysis }
+  def discoverMainClasses(compilationResult: CompilationResult): Seq[String] =
+    extractAnalysis(compilationResult).toSeq.flatMap(
+      _.infos.allInfos.values.flatMap(_.getMainClasses).toSeq.sorted
+    )
+  def lastModification(compilationResult: CompilationResult): Map[String, Long] = {
+    val ans: Option[Analysis] = extractAnalysis(compilationResult)
+    val stamps = collection.mutable.Map.empty[String, Long]
+    def stamp(dep: String): Long = {
+      val stamps = for (a <- ans) yield intlStamp(dep, a, Set.empty)
+      if (stamps.isEmpty) Long.MinValue
+      else stamps.max
+    }
+    def intlStamp(c: String, analysis: Analysis, s: Set[String]): Long = {
+      if (s contains c) Long.MinValue
+      else {
+        val x = {
+          import analysis.{relations => rel, apis}
+          rel.internalClassDeps(c).map(intlStamp(_, analysis, s + c)) ++
+            rel.externalDeps(c).map(stamp) +
+            (apis.internal.get(c) match {
+              case Some(x) => x.compilationTimestamp
+              case _ => Long.MinValue
+            })
+        }.max
+        if (x != Long.MinValue) {
+          stamps(c) = x
+        }
+        x
       }
-      .getOrElse(Seq.empty[String])
+    }
+    ans.map(_.relations.classes._2s.map(c => c -> stamp(c)).toMap).getOrElse(Map.empty)
   }
 
   override def compileJava(
