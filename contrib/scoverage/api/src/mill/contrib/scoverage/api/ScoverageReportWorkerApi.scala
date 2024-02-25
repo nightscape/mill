@@ -28,7 +28,7 @@ trait ScoverageReportWorkerApi {
     ctx.log.error(
       "Binary compatibility stub may cause infinite loops with StackOverflowError. You need to implement: def report(ReportType, Seq[Path], Seq[Path], os.Path): Unit"
     )
-    report(reportType, sources, dataDirs)
+    report(reportType, sources, dataDirs, ctx.workspace)
   }
 }
 

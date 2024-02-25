@@ -11,9 +11,11 @@ object TestUtil {
 //    println("testClassFolder: " + testClassFolder)
     CodeSig.compute(
       os.walk(testClassFolder).filter(_.ext == "class"),
-      sys.env("MILL_TEST_CLASSPATH_" + segments.mkString("-"))
-        .split(",")
-        .map(os.Path(_)),
+      collection.immutable.ArraySeq.unsafeWrapArray(
+        sys.env("MILL_TEST_CLASSPATH_" + segments.mkString("-"))
+          .split(",")
+          .map(os.Path(_))
+      ),
       (_, _) => false,
       new Logger(Some(testLogFolder)),
       () => None

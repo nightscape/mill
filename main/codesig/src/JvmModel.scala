@@ -223,7 +223,10 @@ object JvmModel {
         args.addOne(JType.read(s.substring(index, split + 1)))
         index = split + 1
       }
-      new Desc(args.result(), JType.read(s.substring(closeParenIndex + 1)))
+      new Desc(
+        collection.immutable.ArraySeq.unsafeWrapArray(args.result()),
+        JType.read(s.substring(closeParenIndex + 1))
+      )
     }
 
     implicit val ordering: Ordering[Desc] = Ordering.by(_.pretty)
