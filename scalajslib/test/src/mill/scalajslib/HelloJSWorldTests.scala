@@ -124,7 +124,7 @@ object HelloJSWorldTests extends TestSuite {
       val module = HelloJSWorld.helloJsWorld(scalaVersion, scalaJSVersion)
       val jsFile =
         if (legacy) {
-          val task = if (optimize) module.fullLinkJS else module.fastLinkJS
+          val task = if (optimize) module.fullOpt else module.fastOpt
           val Right((result, evalCount)) = helloWorldEvaluator(task)
           result.path
         } else {

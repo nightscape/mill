@@ -1,5 +1,7 @@
 package mill.codesig
 
+import scala.collection.immutable.ArraySeq
+
 object TestUtil {
 
   def computeCodeSig(segments: Seq[String]) = {
@@ -11,7 +13,7 @@ object TestUtil {
 //    println("testClassFolder: " + testClassFolder)
     CodeSig.compute(
       os.walk(testClassFolder).filter(_.ext == "class"),
-      collection.immutable.ArraySeq.unsafeWrapArray(
+      ArraySeq.unsafeWrapArray(
         sys.env("MILL_TEST_CLASSPATH_" + segments.mkString("-"))
           .split(",")
           .map(os.Path(_))
