@@ -90,6 +90,9 @@ trait TestModule
     zincWorker().worker() lastModification (compile())
   }
 
+  def testQuickCandidates: T[Seq[String]] = T {
+    modificationTimestamps().keys.toSeq
+  }
   /**
    * Discovers and runs the module's tests in a subprocess, reporting the
    * results to the console.
@@ -108,7 +111,6 @@ trait TestModule
         (s, t.tail)
       }
     T.command {
-      T.ctx().log.error(modificationTimestamps().toString)
       testTask(T.task { testArgs }, T.task { selector })()
     }
   }

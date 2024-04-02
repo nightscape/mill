@@ -2,8 +2,18 @@ package mill.integration
 
 import utest._
 
+import java.nio.file.attribute.FileTime
+
 // Regress test for issue https://github.com/com-lihaoyi/mill/issues/1901
 object ZincIncrementalCompilationTests extends IntegrationTestSuite {
+  case class FileModificationTimes(
+      modelSrc: FileTime,
+      appSrc: FileTime,
+      testSrc: FileTime,
+      modelClass: FileTime,
+      appClass: FileTime,
+      testClass: FileTime
+  )
   val tests: Tests = Tests {
     initWorkspace()
     "incremental compilation only compiles changed files" - {
@@ -12,63 +22,71 @@ object ZincIncrementalCompilationTests extends IntegrationTestSuite {
 
       val appSrc = wd / "app" / "src" / "main" / "scala" / "App.scala"
       val modelSrc = wd / "app" / "src" / "main" / "scala" / "models" / "TestModel1.scala"
+      val testSrc = wd / "app" / "src" / "test" / "scala" / "models" / "ModelTest.scala"
       val classes = wd / "out" / "app" / "compile.dest" / "classes"
       val testClasses = wd / "out" / "app" / "test" / "compile.dest" / "classes"
-      val app = classes / "app" / "App.class"
-      val model = classes / "models" / "Foo.class"
-      val test = testClasses / "models" / "ModelTest.class"
-      assert(Seq(classes, app, model, appSrc).forall(os.exists))
+      val appClass = classes / "app" / "App.class"
+      val modelClass = classes / "models" / "Foo.class"
+      val testClass = testClasses / "models" / "ModelTest.class"
+      assert(Seq(classes, appClass, modelClass, appSrc).forall(os.exists))
 
-      val appSrcInfo1 = os.stat(appSrc)
-      val appInfo1 = os.stat(app)
-      val modelInfo1 = os.stat(model)
-      val testInfo1 = os.stat(test)
+      def currentModificationTimes = FileModificationTimes(
+        modelSrc = os.stat(modelSrc).mtime,
+        appSrc = os.stat(appSrc).mtime,
+        testSrc = os.stat(testSrc).mtime,
+        modelClass = os.stat(modelClass).mtime,
+        appClass = os.stat(appClass).mtime,
+        testClass = os.stat(testClass).mtime
+      )
+      val modificationTimes1 = currentModificationTimes
+      println("1" * 80)
+      println(modificationTimes1)
 
       println("** second run **")
       os.write.append(appSrc, "\n ")
-      val succ2nd = eval("app.test.testQuick")
-      assert(succ2nd)
+      val succ2nd = evalStdout("show", "app.test.testQuickCandidates")
+      assert(succ2nd.isSuccess)
+      println(succ2nd.out)
+      assert(!succ2nd.out.contains("ModelTest"))
 
-      val appSrcInfo2 = os.stat(appSrc)
-      val modelSrcInfo2 = os.stat(modelSrc)
-      val appInfo2 = os.stat(app)
-      val modelInfo2 = os.stat(model)
-      val testInfo2 = os.stat(test)
+      val modificationTimes2 = currentModificationTimes
+      println("2" * 80)
+      println(modificationTimes2)
 
       // we changed it
-      assert(appSrcInfo1.mtime != appSrcInfo2.mtime)
+      assert(modificationTimes1.appSrc != modificationTimes2.appSrc)
       // expected to be re-compiled
-      assert(appInfo1.ctime != appInfo2.ctime)
+      assert(modificationTimes1.appClass != modificationTimes2.appClass)
       // expected to be NOT re-compiled
-      assert(modelInfo1.ctime == modelInfo2.ctime)
+      assert(modificationTimes1.modelClass == modificationTimes2.modelClass)
       // expected to be NOT re-compiled
-      assert(testInfo1.ctime == testInfo2.ctime)
+      assert(modificationTimes1.testClass == modificationTimes2.testClass)
 
       println("** third run **")
       val modelCode = os.read(modelSrc)
       val modifiedModelCode = modelCode.replace(
-        "= 0L",
-        "= 1L"
+        "somefoo",
+        "somebar"
       )
+      os.write.over(modelSrc, modifiedModelCode)
       // TODO Read implementation of SBT testQuick
       // https://github.com/sbt/sbt/blob/fd20d3039ad06cbee47c6386dc5839060417014b/main/src/main/scala/sbt/Defaults.scala#L758
-      os.write.over(modelSrc, modifiedModelCode)
-      val succ3rd = eval("app.test.testQuick")
-      assert(succ3rd)
+      val succ3rd = evalStdout("show", "app.test.testQuickCandidates")
+      assert(succ3rd.isSuccess)
+      println(succ3rd.out)
+      assert(succ3rd.out.contains("ModelTest"))
 
-      val modelSrcInfo3 = os.stat(modelSrc)
-      val appInfo3 = os.stat(app)
-      val modelInfo3 = os.stat(model)
-      val testInfo3 = os.stat(test)
-
+      val modificationTimes3 = currentModificationTimes
+      println("3" * 80)
+      println(modificationTimes3)
       // we changed it
-      assert(modelSrcInfo3.mtime != modelSrcInfo2.mtime)
+      assert(modificationTimes3.modelSrc != modificationTimes2.modelSrc)
       // expected to be re-compiled
-      assert(modelInfo3.ctime != modelInfo2.ctime)
+      assert(modificationTimes3.modelClass != modificationTimes2.modelClass)
       // expected to be NOT re-compiled
-      assert(appInfo3.ctime == appInfo2.ctime)
+      assert(modificationTimes3.appClass == modificationTimes2.appClass)
       // expected to be re-compiled
-      assert(testInfo3.ctime != testInfo2.ctime)
+      assert(modificationTimes3.testClass != modificationTimes2.testClass)
     }
   }
 }

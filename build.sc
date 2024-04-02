@@ -54,13 +54,13 @@ object Deps {
   // The Scala version to use
   val scalaVersion = "2.13.13"
   // Scoverage 1.x will not get releases for newer Scala versions
-  val scalaVersionForScoverageWorker1 = "2.13.8"
+  val scalaVersionForScoverageWorker1 = "2.13.13"
   // The Scala 2.12.x version to use for some workers
   val workerScalaVersion212 = "2.12.19"
 
-  val testScala213Version = "2.13.10"
+  val testScala213Version = "2.13.13"
   // Scala Native 4.2 will not get releases for new Scala version
-  val testScala213VersionForScalaNative42 = "2.13.8"
+  val testScala213VersionForScalaNative42 = "2.13.13"
   val testScala212Version = "2.12.6"
   val testScala211Version = "2.11.12"
   val testScala210Version = "2.10.6"
@@ -259,7 +259,7 @@ val bridgeScalaVersions = Seq(
   "2.13.5",
   "2.13.6",
   "2.13.7",
-  "2.13.8",
+  "2.13.10",
   "2.13.9",
   "2.13.10",
   "2.13.11",
