@@ -328,8 +328,7 @@ class ZincWorkerImpl(
     }
   }
 
-  def discoverMainClasses(compilationResult: CompilationResult): Seq[String] = {
-    def toScala[A](o: Optional[A]): Option[A] = if (o.isPresent) Some(o.get) else None
+  def toScala[A](o: Optional[A]): Option[A] = if (o.isPresent) Some(o.get) else None
 
   private def extractAnalysis(compilationResult: CompilationResult): Option[Analysis] =
     toScala(FileAnalysisStore.binary(compilationResult.analysisFile.toIO).get())
